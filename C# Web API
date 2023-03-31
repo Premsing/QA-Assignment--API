@@ -1,0 +1,98 @@
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.AspNetCore.Mvc;
+
+namespace BasicBankSystem.Controllers
+{
+    [ApiController]
+    [Route("[controller]")]
+    public class BankController : ControllerBase
+    {
+        private static Dictionary<string, List<Account>> accounts = new Dictionary<string, List<Account>>();
+
+        // Create an account for a user
+        [HttpPost("{userId}/accounts")]
+        public IActionResult CreateAccount(string userId)
+        {
+            if (!accounts.ContainsKey(userId))
+            {
+                accounts[userId] = new List<Account>();
+            }
+            Account account = new Account();
+            accounts[userId].Add(account);
+            return Ok(account);
+        }
+
+        // Delete an account for a user
+        [HttpDelete("{userId}/accounts/{accountId}")]
+        public IActionResult DeleteAccount(string userId, int accountId)
+        {
+            if (accounts.ContainsKey(userId))
+            {
+                Account account = accounts[userId].FirstOrDefault(a => a.Id == accountId);
+                if (account != null)
+                {
+                    accounts[userId].Remove(account);
+                    return Ok();
+                }
+            }
+            return NotFound();
+        }
+
+        // Deposit money into an account for a user
+        [HttpPost("{userId}/accounts/{accountId}/deposit")]
+        public IActionResult Deposit(string userId, int accountId, [FromBody] DepositRequest depositRequest)
+        {
+            if (accounts.ContainsKey(userId))
+            {
+                Account account = accounts[userId].FirstOrDefault(a => a.Id == accountId);
+                if (account != null && depositRequest.Amount > 0 && depositRequest.Amount <= 10000)
+                {
+                    account.Balance += depositRequest.Amount;
+                    return Ok(account);
+                }
+            }
+            return NotFound();
+        }
+
+        // Withdraw money from an account for a user
+        [HttpPost("{userId}/accounts/{accountId}/withdraw")]
+        public IActionResult Withdraw(string userId, int accountId, [FromBody] WithdrawRequest withdrawRequest)
+        {
+            if (accounts.ContainsKey(userId))
+            {
+                Account account = accounts[userId].FirstOrDefault(a => a.Id == accountId);
+                if (account != null && account.Balance >= 100 && withdrawRequest.Amount > 0 && withdrawRequest.Amount <= account.Balance * 0.9)
+                {
+                    account.Balance -= withdrawRequest.Amount;
+                    return Ok(account);
+                }
+            }
+            return NotFound();
+        }
+    }
+
+    public class Account
+    {
+        public int Id { get; set; }
+        public decimal Balance { get; set; }
+        public static int NextId { get; set; } = 1;
+
+        public Account()
+        {
+            Id = NextId;
+            NextId++;
+            Balance = 0;
+        }
+    }
+
+    public class DepositRequest
+    {
+        public decimal Amount { get; set; }
+    }
+
+    public class WithdrawRequest
+    {
+        public decimal Amount { get; set; }
+    }
+}

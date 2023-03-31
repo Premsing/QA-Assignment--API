@@ -1,0 +1,113 @@
+using BasicBankSystem.Controllers;
+using Microsoft.AspNetCore.Mvc;
+using NUnit.Framework;
+
+namespace BasicBankSystem.Tests
+{
+    [TestFixture]
+    public class BankControllerTests
+    {
+        private BankController controller;
+
+        [SetUp]
+        public void Setup()
+        {
+            controller = new BankController();
+        }
+
+        [Test]
+        public void CreateAccount_ValidUserId_ReturnsOk()
+        {
+            // Arrange
+            var userId = "user1";
+
+            // Act
+            var result = controller.CreateAccount(userId) as OkObjectResult;
+            var account = result.Value as Account;
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual(200, result.StatusCode);
+            Assert.IsNotNull(account);
+            Assert.AreEqual(1, account.Id);
+            Assert.AreEqual(0, account.Balance);
+        }
+
+        [Test]
+        public void DeleteAccount_ValidUserIdAndAccountId_ReturnsOk()
+        {
+            // Arrange
+            var userId = "user1";
+            var accountId = 1;
+            controller.CreateAccount(userId);
+
+            // Act
+            var result = controller.DeleteAccount(userId, accountId) as OkResult;
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual(200, result.StatusCode);
+        }
+
+        [Test]
+        public void Deposit_ValidUserIdAndAccountIdAndAmount_ReturnsOk()
+        {
+            // Arrange
+            var userId = "user1";
+            var accountId = 1;
+            controller.CreateAccount(userId);
+            var depositRequest = new DepositRequest { Amount = 500 };
+
+            // Act
+            var result = controller.Deposit(userId, accountId, depositRequest) as OkObjectResult;
+            var account = result.Value as Account;
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual(200, result.StatusCode);
+            Assert.IsNotNull(account);
+            Assert.AreEqual(500, account.Balance);
+        }
+
+        [Test]
+        public void Withdraw_ValidUserIdAndAccountIdAndAmount_ReturnsOk()
+        {
+            // Arrange
+            var userId = "user1";
+            var accountId = 1;
+            controller.CreateAccount(userId);
+            var depositRequest = new DepositRequest { Amount = 1000 };
+            controller.Deposit(userId, accountId, depositRequest);
+            var withdrawRequest = new WithdrawRequest { Amount = 800 };
+
+            // Act
+            var result = controller.Withdraw(userId, accountId, withdrawRequest) as OkObjectResult;
+            var account = result.Value as Account;
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual(200, result.StatusCode);
+            Assert.IsNotNull(account);
+            Assert.AreEqual(200, account.Balance);
+        }
+
+        [Test]
+        public void Withdraw_InvalidAmount_ReturnsNotFound()
+        {
+            // Arrange
+            var userId = "user1";
+            var accountId = 1;
+            controller.CreateAccount(userId);
+            var depositRequest = new DepositRequest { Amount = 1000 };
+            controller.Deposit(userId, accountId, depositRequest);
+            var withdrawRequest = new WithdrawRequest { Amount = 10000 };
+
+            // Act
+            var result = controller.Withdraw(userId, accountId, withdrawRequest) as NotFoundResult;
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual(404, result.StatusCode);
+        }
+    }
+}
